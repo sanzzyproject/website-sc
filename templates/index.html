@@ -3,28 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ProScraper - Web Scraper & Previewer</title>
+    <title>ProScraper Ultimate</title>
     <style>
         :root {
-            --primary: #2563eb;
-            --primary-hover: #1d4ed8;
-            --bg: #f8fafc;
-            --surface: #ffffff;
-            --text: #1e293b;
-            --border: #e2e8f0;
-            --error: #ef4444;
+            --primary: #6366f1; /* Indigo */
+            --primary-hover: #4f46e5;
+            --bg: #0f172a; /* Dark Mode base */
+            --surface: #1e293b;
+            --text: #f8fafc;
+            --border: #334155;
+            --success: #22c55e;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Segoe UI', Roboto, Helvetica, sans-serif;
             background-color: var(--bg);
             color: var(--text);
-            line-height: 1.5;
             height: 100vh;
             display: flex;
             flex-direction: column;
+            overflow: hidden;
         }
 
         /* Header */
@@ -36,232 +36,272 @@
             align-items: center;
             justify-content: space-between;
         }
-
-        .brand { font-weight: 700; font-size: 1.25rem; color: var(--primary); display: flex; align-items: center; gap: 8px; }
-        .brand span { color: var(--text); }
-
+        .brand { font-size: 1.25rem; font-weight: bold; color: var(--primary); display: flex; align-items: center; gap: 10px; }
+        
         /* Main Layout */
         main {
             flex: 1;
             display: flex;
-            flex-direction: column;
-            padding: 1.5rem;
-            max-width: 1200px;
-            width: 100%;
-            margin: 0 auto;
-            gap: 1.5rem;
-        }
-
-        /* Input Section */
-        .control-panel {
-            background: var(--surface);
-            padding: 1.5rem;
-            border-radius: 12px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            display: flex;
+            padding: 1rem;
             gap: 1rem;
-            align-items: center;
+            height: calc(100vh - 70px);
         }
 
-        .input-group { flex: 1; position: relative; }
-        
-        input[type="url"] {
-            width: 100%;
-            padding: 0.75rem 1rem;
+        /* Sidebar Control Panel */
+        .sidebar {
+            width: 350px;
+            background: var(--surface);
+            border-radius: 12px;
             border: 1px solid var(--border);
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: border-color 0.2s;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            overflow-y: auto;
+        }
+
+        .form-group label { display: block; margin-bottom: 0.5rem; font-size: 0.875rem; color: #94a3b8; }
+        .input-box {
+            width: 100%;
+            padding: 0.75rem;
+            background: #0f172a;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: white;
             outline: none;
         }
+        .input-box:focus { border-color: var(--primary); }
 
-        input[type="url"]:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
-
-        button {
-            background-color: var(--primary);
+        .btn {
+            background: var(--primary);
             color: white;
             border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 8px;
-            font-weight: 600;
+            padding: 0.75rem;
+            border-radius: 6px;
             cursor: pointer;
-            transition: background 0.2s;
-            white-space: nowrap;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
+            font-weight: 600;
+            width: 100%;
+            transition: 0.2s;
         }
+        .btn:hover { background: var(--primary-hover); }
+        .btn:disabled { opacity: 0.7; cursor: wait; }
 
-        button:hover { background-color: var(--primary-hover); }
-        button:disabled { background-color: #94a3b8; cursor: not-allowed; }
-
-        /* Preview Section */
-        .preview-container {
+        /* Result Area */
+        .result-area {
             flex: 1;
             background: var(--surface);
             border-radius: 12px;
             border: 1px solid var(--border);
-            overflow: hidden;
             display: flex;
             flex-direction: column;
-            position: relative;
-            min-height: 400px;
+            overflow: hidden;
         }
 
-        .preview-header {
-            padding: 0.75rem 1.5rem;
-            background: #f1f5f9;
-            border-bottom: 1px solid var(--border);
-            font-size: 0.875rem;
-            color: #64748b;
+        /* Tabs */
+        .tabs {
             display: flex;
-            justify-content: space-between;
+            border-bottom: 1px solid var(--border);
+            background: #0f172a;
         }
-
-        iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-            background: white;
-            flex: 1;
-        }
-
-        /* State & Animation */
-        .status-msg { margin-top: 0.5rem; font-size: 0.875rem; min-height: 20px; }
-        .error { color: var(--error); }
-        .success { color: #16a34a; }
-
-        .spinner {
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255,255,255,0.3);
-            border-radius: 50%;
-            border-top-color: white;
-            animation: spin 1s ease-in-out infinite;
-            display: none;
-        }
-
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        /* Empty State */
-        .empty-state {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
+        .tab {
+            padding: 1rem 1.5rem;
+            cursor: pointer;
             color: #94a3b8;
+            border-bottom: 2px solid transparent;
+            font-size: 0.9rem;
+        }
+        .tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+            font-weight: bold;
         }
 
-        /* Mobile Responsive */
+        /* Content Views */
+        .view-content {
+            flex: 1;
+            position: relative;
+            display: none;
+            overflow: hidden;
+        }
+        .view-content.active { display: block; }
+
+        iframe { width: 100%; height: 100%; border: none; background: white; }
+
+        /* JSON/Data Viewer Styling */
+        .data-viewer {
+            padding: 1.5rem;
+            overflow-y: auto;
+            height: 100%;
+            font-family: monospace;
+        }
+        
+        .data-card {
+            background: #0f172a;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            border: 1px solid var(--border);
+        }
+        .data-title { color: var(--primary); margin-bottom: 0.5rem; font-weight: bold; }
+        pre { white-space: pre-wrap; word-wrap: break-word; color: #cbd5e1; font-size: 0.85rem; }
+
+        /* Utilities */
+        .hidden { display: none; }
+        .badge { 
+            background: #064e3b; color: #34d399; 
+            padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; 
+        }
+
+        /* Responsive */
         @media (max-width: 768px) {
-            .control-panel { flex-direction: column; align-items: stretch; }
-            main { padding: 1rem; }
+            main { flex-direction: column; }
+            .sidebar { width: 100%; height: auto; }
         }
     </style>
 </head>
 <body>
 
 <header>
-    <div class="brand">⚡ <span>ProScraper</span></div>
-    <div style="font-size: 0.875rem; color: #64748b;">Python Serverless Scraper</div>
+    <div class="brand">⚡ ProScraper <span style="font-size:0.8rem; opacity:0.7; border:1px solid var(--border); padding:2px 6px; border-radius:4px;">Ultimate</span></div>
+    <div>
+        <a href="https://github.com/danzz/proscraper" target="_blank" style="color:white; text-decoration:none; font-size:0.9rem;">GitHub</a>
+    </div>
 </header>
 
 <main>
-    <div class="control-panel">
-        <div class="input-group">
-            <input type="url" id="urlInput" placeholder="https://example.com" required>
+    <div class="sidebar">
+        <div class="form-group">
+            <label>Target URL</label>
+            <input type="url" id="urlInput" class="input-box" placeholder="https://example.com" required>
         </div>
-        <button id="scrapeBtn" onclick="performScrape()">
-            <div class="spinner" id="spinner"></div>
-            <span id="btnText">Start Scraping</span>
-        </button>
-    </div>
-    <div class="status-msg" id="statusMsg"></div>
 
-    <div class="preview-container">
-        <div class="preview-header">
-            <span>Result Preview</span>
-            <span id="statusCode"></span>
+        <div class="form-group">
+            <label>Custom CSS Selector (Opsional)</label>
+            <input type="text" id="selectorInput" class="input-box" placeholder="Contoh: h1, .price, #content">
+            <small style="color:#64748b; font-size:0.75rem;">Kosongkan untuk scrape standar.</small>
         </div>
-        <div class="empty-state" id="emptyState">
-            <svg width="64" height="64" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin-bottom: 1rem;">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
-            </svg>
-            <p>Masukkan URL untuk melihat hasil scrape</p>
+
+        <button id="scrapeBtn" class="btn" onclick="startScrape()">Start Scraping</button>
+        
+        <div id="statusArea" style="margin-top:1rem; font-size:0.9rem;"></div>
+    </div>
+
+    <div class="result-area">
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('preview')">👁️ Visual Preview</div>
+            <div class="tab" onclick="switchTab('data')">📊 Extracted Data (JSON)</div>
         </div>
-        <iframe id="resultFrame" sandbox="allow-same-origin allow-scripts"></iframe>
+
+        <div id="view-preview" class="view-content active">
+            <iframe id="previewFrame" sandbox="allow-same-origin allow-scripts"></iframe>
+            <div id="emptyState" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:#64748b; text-align:center;">
+                <p>Menunggu URL...</p>
+            </div>
+        </div>
+
+        <div id="view-data" class="view-content">
+            <div class="data-viewer" id="jsonOutput">
+                <p style="color:#64748b; text-align:center; margin-top:2rem;">Belum ada data yang diekstrak.</p>
+            </div>
+        </div>
     </div>
 </main>
 
 <script>
-    async function performScrape() {
-        const urlInput = document.getElementById('urlInput');
-        const scrapeBtn = document.getElementById('scrapeBtn');
-        const spinner = document.getElementById('spinner');
-        const btnText = document.getElementById('btnText');
-        const statusMsg = document.getElementById('statusMsg');
-        const iframe = document.getElementById('resultFrame');
+    let currentData = null;
+
+    function switchTab(tabName) {
+        // Update Tab Styles
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        event.currentTarget.classList.add('active');
+
+        // Update Content
+        document.querySelectorAll('.view-content').forEach(c => c.classList.remove('active'));
+        document.getElementById(`view-${tabName}`).classList.add('active');
+    }
+
+    async function startScrape() {
+        const url = document.getElementById('urlInput').value;
+        const selector = document.getElementById('selectorInput').value;
+        const btn = document.getElementById('scrapeBtn');
+        const status = document.getElementById('statusArea');
         const emptyState = document.getElementById('emptyState');
-        const statusCode = document.getElementById('statusCode');
 
-        const url = urlInput.value.trim();
-
-        if (!url) {
-            showStatus('Mohon masukkan URL yang valid.', 'error');
-            return;
-        }
+        if (!url) return alert("Masukkan URL!");
 
         // Reset UI
-        statusMsg.textContent = '';
-        statusCode.textContent = '';
-        emptyState.style.display = 'none';
-        iframe.srcdoc = ''; 
+        btn.disabled = true;
+        btn.textContent = "Scraping...";
+        status.innerHTML = "";
         
-        // Loading State
-        scrapeBtn.disabled = true;
-        spinner.style.display = 'block';
-        btnText.textContent = 'Processing...';
-
         try {
-            const response = await fetch('/api/scrape', {
+            const res = await fetch('/api/scrape', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ url: url })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url: url, selector: selector || null })
             });
 
-            const data = await response.json();
+            const result = await res.json();
 
-            if (!response.ok) {
-                throw new Error(data.detail || 'Terjadi kesalahan saat scraping.');
-            }
+            if (!res.ok) throw new Error(result.detail || 'Gagal scraping');
 
-            // Success
-            statusCode.textContent = `Status: ${data.status_code}`;
-            statusCode.style.color = '#16a34a';
-            showStatus(`Berhasil scrape: ${data.url}`, 'success');
-            
-            iframe.srcdoc = data.html;
+            // 1. Handle Visual Preview
+            document.getElementById('previewFrame').srcdoc = result.html;
+            emptyState.style.display = 'none';
 
-        } catch (error) {
-            console.error(error);
-            showStatus(error.message, 'error');
-            emptyState.style.display = 'block';
-            emptyState.innerHTML = `<p style="color:var(--error)">${error.message}</p>`;
+            // 2. Handle Data Extraction
+            currentData = result.data;
+            renderDataView(result.data, result.status_code);
+
+            status.innerHTML = `<span style="color:var(--success)">Sukses! Code: ${result.status_code}</span>`;
+
+        } catch (err) {
+            status.innerHTML = `<span style="color:#ef4444">Error: ${err.message}</span>`;
         } finally {
-            // Restore State
-            scrapeBtn.disabled = false;
-            spinner.style.display = 'none';
-            btnText.textContent = 'Start Scraping';
+            btn.disabled = false;
+            btn.textContent = "Start Scraping";
         }
     }
 
-    function showStatus(msg, type) {
-        const el = document.getElementById('statusMsg');
-        el.textContent = msg;
-        el.className = 'status-msg ' + type;
+    function renderDataView(data, code) {
+        const container = document.getElementById('jsonOutput');
+        let html = `
+            <div style="display:flex; justify-content:space-between; margin-bottom:1rem;">
+                <span class="badge">Status: ${code}</span>
+                <button onclick="downloadJson()" style="background:#334155; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">⬇ Download JSON</button>
+            </div>
+        `;
+
+        // Metadata Section
+        html += `<div class="data-card"><div class="data-title">Metadata</div>
+        <pre>Title: ${data.metadata.title}\nDesc:  ${data.metadata.description}</pre></div>`;
+
+        // Custom Data Section (jika user pakai selector)
+        if (data.custom_data && data.custom_data.length > 0) {
+            html += `<div class="data-card" style="border-color:var(--primary);"><div class="data-title">Custom Selector Result</div>
+            <pre>${JSON.stringify(data.custom_data, null, 2)}</pre></div>`;
+        }
+
+        // Links Count
+        html += `<div class="data-card"><div class="data-title">Links Found (${data.links.length})</div>
+        <pre style="max-height:150px; overflow:auto;">${JSON.stringify(data.links.slice(0, 10), null, 2)}... \n(and more)</pre></div>`;
+
+        // Images Count
+        html += `<div class="data-card"><div class="data-title">Images Found (${data.images.length})</div>
+        <pre style="max-height:150px; overflow:auto;">${JSON.stringify(data.images.slice(0, 10), null, 2)}... \n(and more)</pre></div>`;
+
+        container.innerHTML = html;
+    }
+
+    function downloadJson() {
+        if (!currentData) return;
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(currentData, null, 2));
+        const downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute("href", dataStr);
+        downloadAnchorNode.setAttribute("download", "scrape_result.json");
+        document.body.appendChild(downloadAnchorNode);
+        downloadAnchorNode.click();
+        downloadAnchorNode.remove();
     }
 </script>
 
