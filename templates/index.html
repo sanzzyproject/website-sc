@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ZenScraper - Web Scraping API</title>
+    <title>SannScraper - Web Scraping API</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -27,24 +27,152 @@
             height: 100vh;
             display: flex;
             flex-direction: column;
-            overflow: hidden; /* Prevent body scroll, handle inside containers */
+            overflow: hidden; 
         }
 
-        /* NAVBAR */
+        /* NAVBAR - GLASSMORPHISM & STICKY */
         nav {
             height: 60px;
             min-height: 60px;
-            background: var(--bg-dark);
-            border-bottom: 1px solid var(--border);
+            /* Update: Glassmorphism Effect */
+            background: rgba(11, 12, 21, 0.85); 
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            
+            /* Update: Sticky Positioning */
+            position: sticky;
+            top: 0;
+            z-index: 1000; /* Pastikan selalu di atas */
+            
             display: flex;
             align-items: center;
             padding: 0 1.5rem;
             justify-content: space-between;
-            z-index: 10;
         }
+        
         .logo { font-weight: 700; font-size: 1.2rem; display: flex; align-items: center; gap: 8px; }
         .logo span { color: var(--primary); }
         .nav-subtitle { font-size: 0.85rem; color: var(--text-muted); }
+
+        /* MENU TITIK TIGA (DROPDOWN) */
+        .menu-wrapper {
+            position: relative;
+        }
+        .menu-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background 0.2s;
+            color: var(--primary); /* Update: Warna Hijau */
+        }
+        .menu-btn:hover, .menu-btn:active {
+            background: rgba(0, 197, 142, 0.1);
+        }
+        
+        .dropdown {
+            position: absolute;
+            top: 140%;
+            right: 0;
+            width: 260px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.6);
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+            z-index: 1100;
+        }
+        .dropdown.show { display: flex; animation: fadeIn 0.2s ease-out; }
+        
+        .dropdown-item {
+            padding: 14px 16px;
+            text-decoration: none;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .dropdown-item:hover {
+            background: rgba(255,255,255,0.05);
+            color: var(--primary);
+        }
+        /* Update: SVG Styling */
+        .dropdown-item svg {
+            width: 18px;
+            height: 18px;
+            stroke-width: 2;
+        }
+
+        .credit-box {
+            background: rgba(11, 12, 21, 0.95);
+            padding: 15px;
+            text-align: center;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            border-top: 1px solid var(--border);
+        }
+        .credit-highlight {
+            color: var(--primary);
+            font-weight: 700;
+            display: block;
+            margin-top: 4px;
+            font-size: 0.85rem;
+        }
+
+        /* MODAL DOKUMENTASI */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(5px);
+            z-index: 2000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .modal-content {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            background: var(--bg-panel);
+        }
+        .modal-body {
+            padding: 20px;
+            color: #d1d5db;
+            line-height: 1.6;
+            font-size: 0.9rem;
+        }
+        .modal-body h4 { color: var(--primary); margin-top: 15px; margin-bottom: 8px; }
+        .modal-body ul { padding-left: 20px; margin-bottom: 10px; }
+        .close-modal {
+            background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer;
+        }
 
         /* MAIN LAYOUT */
         .container {
@@ -69,8 +197,7 @@
 
         h3 { font-size: 0.85rem; text-transform: uppercase; color: var(--text-muted); letter-spacing: 1px; margin-bottom: 10px; }
 
-        .input-group { margin-bottom: 1rem; }
-        label { display: block; font-size: 0.9rem; margin-bottom: 0.5rem; }
+        .input-group { margin-bottom: 0.5rem; }
         
         input[type="url"], input[type="text"] {
             width: 100%;
@@ -80,27 +207,48 @@
             border-radius: 6px;
             color: white;
             font-family: 'JetBrains Mono', monospace;
-            font-size: 0.9rem; /* Larger font for mobile */
+            font-size: 0.9rem; 
             outline: none;
             transition: border-color 0.2s;
         }
         input:focus { border-color: var(--primary); }
 
-        /* TOGGLES */
+        /* CONFIG CARD */
+        .config-card {
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+            padding: 0 12px;
+        }
+
         .toggle-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 12px;
-            padding: 8px 0;
+            padding: 14px 4px;
             border-bottom: 1px solid rgba(255,255,255,0.05);
         }
-        .toggle-label { font-size: 0.9rem; }
+        .toggle-row:last-child { border-bottom: none; }
+        
+        .toggle-label { 
+            font-size: 0.9rem; 
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        /* Ikon Config menggunakan SVG */
+        .icon-label svg { width: 18px; height: 18px; stroke: var(--primary); opacity: 0.9; }
+        .icon-label { display: flex; align-items: center; }
+
         .switch {
             position: relative;
             display: inline-block;
-            width: 44px; /* Slightly larger for touch */
+            width: 44px;
             height: 24px;
+            flex-shrink: 0; 
         }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider {
@@ -130,8 +278,8 @@
             color: #000;
             font-weight: 700;
             border: none;
-            padding: 14px; /* Larger touch target */
-            border-radius: 6px;
+            padding: 16px; 
+            border-radius: 8px;
             width: 100%;
             cursor: pointer;
             margin-top: auto;
@@ -141,9 +289,10 @@
             gap: 8px;
             font-size: 1rem;
             transition: opacity 0.2s;
+            box-shadow: 0 4px 12px rgba(0, 197, 142, 0.2);
         }
-        .btn-scrape:active { opacity: 0.8; }
-        .btn-scrape:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-scrape:active { transform: scale(0.98); opacity: 0.9; }
+        .btn-scrape:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
         /* RIGHT PANEL (RESULTS) */
         .main-content {
@@ -151,10 +300,10 @@
             display: flex;
             flex-direction: column;
             background: var(--bg-dark);
-            min-width: 0; /* Prevent flex overflow */
+            min-width: 0; 
         }
 
-        /* Request Generator (Top Right) */
+        /* Request Generator */
         .code-preview {
             height: 150px;
             min-height: 150px;
@@ -178,7 +327,7 @@
             white-space: pre;
         }
 
-        /* Result View (Bottom Right) */
+        /* Result View */
         .result-view {
             flex: 1;
             display: flex;
@@ -191,11 +340,11 @@
             display: flex;
             background: var(--bg-panel);
             border-bottom: 1px solid var(--border);
-            overflow-x: auto; /* Scrollable tabs on mobile */
+            overflow-x: auto; 
             white-space: nowrap;
             -webkit-overflow-scrolling: touch;
         }
-        .tabs::-webkit-scrollbar { display: none; } /* Hide scrollbar */
+        .tabs::-webkit-scrollbar { display: none; } 
         
         .tab {
             padding: 12px 20px;
@@ -228,7 +377,7 @@
             font-family: 'JetBrains Mono', monospace;
             font-size: 0.85rem;
             color: #e2e8f0;
-            word-wrap: break-word; /* Prevent overflow text */
+            word-wrap: break-word; 
         }
         .key { color: #7dd3fc; }
         .string { color: #86efac; }
@@ -243,83 +392,92 @@
             display: none;
         }
         @keyframes spin { 100% { transform: rotate(360deg); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* =========================================
-           MOBILE RESPONSIVE TWEAKS (ANDROID FIX)
-           ========================================= */
+        /* MOBILE FIXES */
         @media (max-width: 768px) {
-            body { 
-                height: 100%; 
-                overflow-y: auto; /* Allow full page scroll on mobile */
-            }
-            
-            nav {
-                padding: 0 1rem;
-            }
-            .nav-subtitle { display: none; } /* Save space in header */
-
-            .container {
-                flex-direction: column;
-                height: auto;
-                overflow: visible;
-            }
-
-            /* Config Panel */
-            .sidebar {
-                width: 100%;
-                min-width: 100%;
-                height: auto;
-                border-right: none;
-                border-bottom: 1px solid var(--border);
-                padding: 1rem;
-                gap: 1rem;
-            }
-
-            .btn-scrape {
-                margin-top: 1rem;
-            }
-
-            /* Main Content */
-            .main-content {
-                height: auto;
-                min-height: 80vh; /* Ensure enough space for results */
-            }
-
-            /* Code Preview - Make it smaller on mobile or collapsible */
-            .code-preview {
-                height: auto;
-                min-height: auto;
-                padding: 0.75rem;
-            }
-            .code-box {
-                height: 80px; /* Smaller code box on mobile */
-            }
-
-            /* Result Area */
-            .result-view {
-                height: 600px; /* Fixed height for scrollable result area */
-            }
-            
-            .tab {
-                flex: 1; /* Distribute tabs evenly */
-                text-align: center;
-                padding: 12px 10px;
-                font-size: 0.8rem;
-            }
+            body { height: 100%; overflow-y: auto; }
+            nav { padding: 0 1rem; }
+            .nav-subtitle { display: none; } 
+            .container { flex-direction: column; height: auto; overflow: visible; }
+            .sidebar { width: 100%; min-width: 100%; height: auto; border-right: none; border-bottom: 1px solid var(--border); padding: 1.25rem; gap: 1.25rem; }
+            .btn-scrape { margin-top: 1.5rem; }
+            .main-content { height: auto; min-height: 80vh; }
+            .code-preview { height: auto; min-height: auto; padding: 1rem; }
+            .code-box { height: 100px; }
+            .result-view { height: 600px; }
+            .tab { flex: 1; text-align: center; padding: 14px 10px; font-size: 0.85rem; }
+            .dropdown { right: 10px; width: 240px; }
         }
     </style>
 </head>
 <body>
+
+<div class="modal-overlay" id="docModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 style="color:white; margin:0;">Dokumentasi Lengkap</h3>
+            <button class="close-modal" onclick="toggleDocs()">×</button>
+        </div>
+        <div class="modal-body">
+            <p>Selamat datang di SannScraper API Interface. Alat ini dirancang untuk melakukan ekstraksi data web secara otomatis dan efisien.</p>
+            
+            <h4>1. Anti-Bot (User-Agent)</h4>
+            <p>Fitur ini secara otomatis memutar <i>User-Agent headers</i> agar permintaan terlihat seperti berasal dari browser asli (Chrome/Firefox), menghindari pemblokiran oleh firewall sederhana.</p>
+            
+            <h4>2. Premium Proxy</h4>
+            <p>Mengalihkan lalu lintas melalui jaringan proxy residensial. Ini menyembunyikan IP asli server dan memungkinkan akses ke situs yang dibatasi secara geografis.</p>
+            
+            <h4>3. Render JavaScript</h4>
+            <p>Menggunakan browser <i>headless</i> untuk memuat situs web sepenuhnya, termasuk konten yang dirender oleh JavaScript (React, Vue, Angular) sebelum mengambil HTML-nya.</p>
+            
+            <h4>4. CSS Selector</h4>
+            <p>Masukkan selector spesifik (contoh: <code>div.product-price</code>) untuk hanya mengambil data yang Anda butuhkan, bukan seluruh halaman HTML.</p>
+        </div>
+    </div>
+</div>
 
 <nav>
     <div class="logo">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00c58e" stroke-width="2">
             <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
         </svg>
-        Zen<span>Scraper</span>
+        Sann<span>Scraper</span>
     </div>
-    <div class="nav-subtitle">
-        Serverless Python Scraper
+    
+    <div style="display:flex; align-items:center; gap:15px;">
+        <div class="nav-subtitle">Serverless Python Scraper</div>
+        
+        <div class="menu-wrapper">
+            <button class="menu-btn" onclick="toggleMenu()" id="menuTrigger">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="1"></circle>
+                    <circle cx="12" cy="5" r="1"></circle>
+                    <circle cx="12" cy="19" r="1"></circle>
+                </svg>
+            </button>
+            <div class="dropdown" id="mainMenu">
+                <a href="#" class="dropdown-item" onclick="toggleDocs(); return false;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+                    <span>Dokumentasi</span>
+                </a>
+                
+                <a href="https://whatsapp.com/channel/0029Vb6ukqnHQbS4mKP0j80L" target="_blank" class="dropdown-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                    <span>Developer Channel</span>
+                </a>
+                
+                <a href="#" class="dropdown-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+                    <span>Instagram Dev</span>
+                </a>
+
+                <div class="credit-box">
+                    Built & Maintained by
+                    <span class="credit-highlight">SANN404 FORUM</span>
+                </div>
+            </div>
+        </div>
     </div>
 </nav>
 
@@ -331,31 +489,48 @@
         </div>
 
         <h3>Configuration</h3>
-        <div class="toggle-row">
-            <span class="toggle-label">Anti-Bot (User-Agent)</span>
-            <label class="switch">
-                <input type="checkbox" id="antiBot" checked onchange="updateCode()">
-                <span class="slider"></span>
-            </label>
-        </div>
-        <div class="toggle-row">
-            <span class="toggle-label">Premium Proxy</span>
-            <label class="switch">
-                <input type="checkbox" id="proxy" onchange="updateCode()">
-                <span class="slider"></span>
-            </label>
-        </div>
-        <div class="toggle-row">
-            <span class="toggle-label">Render JavaScript</span>
-            <label class="switch">
-                <input type="checkbox" id="renderJs" onchange="updateCode()">
-                <span class="slider"></span>
-            </label>
+        <div class="config-card">
+            <div class="toggle-row">
+                <span class="toggle-label">
+                    <div class="icon-label">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                    </div>
+                    Anti-Bot (UA)
+                </span>
+                <label class="switch">
+                    <input type="checkbox" id="antiBot" checked onchange="updateCode()">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="toggle-row">
+                <span class="toggle-label">
+                    <div class="icon-label">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                    </div>
+                    Premium Proxy
+                </span>
+                <label class="switch">
+                    <input type="checkbox" id="proxy" onchange="updateCode()">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="toggle-row">
+                <span class="toggle-label">
+                    <div class="icon-label">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                    </div>
+                    Render JS
+                </span>
+                <label class="switch">
+                    <input type="checkbox" id="renderJs" onchange="updateCode()">
+                    <span class="slider"></span>
+                </label>
+            </div>
         </div>
 
         <h3>Extraction</h3>
         <div class="input-group">
-            <label style="margin-bottom:0.5rem; color:var(--text-muted); font-size:0.8rem;">CSS Selector (Optional)</label>
+            <label style="margin-bottom:0.5rem; color:var(--text-muted); font-size:0.8rem; display:block">CSS Selector (Optional)</label>
             <input type="text" id="selector" placeholder="e.g. h1, .price" oninput="updateCode()">
         </div>
 
@@ -432,25 +607,19 @@
     updateCode();
     document.getElementById('url').addEventListener('input', updateCode);
 
-    // 2. TAB LOGIC (BUG FIX: Removed dependency on global 'event')
+    // 2. TAB LOGIC
     function setTab(mode, element) {
-        // Hide all views
         document.getElementById('view-json').style.display = 'none';
         document.getElementById('view-html').style.display = 'none';
         document.getElementById('view-headers').style.display = 'none';
         
-        // Remove active class from all tabs
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
         
-        // Show selected view
         document.getElementById(`view-${mode}`).style.display = 'block';
         
-        // Set active tab logic
         if (element) {
-            // If clicked by user
             element.classList.add('active');
         } else {
-            // If called programmatically (fallback to find by text)
             const tabs = document.querySelectorAll('.tab');
             if(mode === 'json') tabs[0].classList.add('active');
             if(mode === 'html') tabs[1].classList.add('active');
@@ -458,13 +627,12 @@
         }
     }
 
-    // 3. EXECUTE SCRAPE
+    // 3. EXECUTE SCRAPE (TIDAK DIUBAH SECARA LOGIKA, HANYA PEMANGGILAN API)
     async function runScraper() {
         const btn = document.getElementById('scrapeBtn');
         const spinner = document.getElementById('spinner');
         const btnText = document.getElementById('btnText');
         
-        // Set Loading
         btn.disabled = true;
         spinner.style.display = 'block';
         btnText.textContent = 'Processing...';
@@ -486,20 +654,16 @@
             
             const data = await res.json();
 
-            // Render JSON
             document.getElementById('jsonOutput').innerHTML = syntaxHighlight(data);
             
-            // Render Headers
             if(data.response_headers) {
                 document.getElementById('headersOutput').innerHTML = syntaxHighlight(data.response_headers);
             }
 
-            // Render HTML Frame
             if (data.html_preview) {
                 document.getElementById('htmlFrame').srcdoc = data.html_preview;
             }
 
-            // BUG FIX: Manual switch without triggering undefined event
             if (data.success) {
                 setTab('json', null); 
             } else {
@@ -507,7 +671,7 @@
             }
 
         } catch (e) {
-            console.error(e); // Log error for debugging
+            console.error(e);
             alert("Connection Error: " + e.message);
         } finally {
             btn.disabled = false;
@@ -544,6 +708,40 @@
         navigator.clipboard.writeText(code);
         alert("Code copied to clipboard!");
     }
+
+    // MENU & MODAL LOGIC
+    function toggleMenu() {
+        const menu = document.getElementById('mainMenu');
+        menu.classList.toggle('show');
+    }
+
+    function toggleDocs() {
+        const modal = document.getElementById('docModal');
+        const menu = document.getElementById('mainMenu');
+        
+        // Toggle Display
+        if(modal.style.display === 'flex') {
+            modal.style.display = 'none';
+        } else {
+            modal.style.display = 'flex';
+            menu.classList.remove('show'); // Tutup menu saat buka docs
+        }
+    }
+
+    // Close menu when clicking outside
+    window.addEventListener('click', function(e) {
+        const menu = document.getElementById('mainMenu');
+        const trigger = document.getElementById('menuTrigger');
+        if (!menu.contains(e.target) && !trigger.contains(e.target)) {
+            menu.classList.remove('show');
+        }
+        
+        // Close modal when clicking outside box
+        const modal = document.getElementById('docModal');
+        if (e.target === modal) {
+            modal.style.display = 'none';
+        }
+    });
 </script>
 
 </body>
