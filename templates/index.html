@@ -2,23 +2,23 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ZenScraper - Web Scraping API</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-dark: #0b0c15;      /* ZenRows Dark Background */
-            --bg-panel: #13141f;     /* Slightly lighter panel */
-            --primary: #00c58e;      /* ZenRows Green */
+            --bg-dark: #0b0c15;      
+            --bg-panel: #13141f;     
+            --primary: #00c58e;      
             --primary-hover: #00e6a5;
-            --accent: #6d28d9;       /* Purple Accent */
+            --accent: #6d28d9;       
             --text-main: #ffffff;
             --text-muted: #94a3b8;
             --border: #2d2e3d;
             --code-bg: #1c1d26;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
         body {
             font-family: 'Inter', sans-serif;
@@ -27,33 +27,37 @@
             height: 100vh;
             display: flex;
             flex-direction: column;
-            overflow: hidden;
+            overflow: hidden; /* Prevent body scroll, handle inside containers */
         }
 
         /* NAVBAR */
         nav {
             height: 60px;
+            min-height: 60px;
             background: var(--bg-dark);
             border-bottom: 1px solid var(--border);
             display: flex;
             align-items: center;
             padding: 0 1.5rem;
             justify-content: space-between;
+            z-index: 10;
         }
         .logo { font-weight: 700; font-size: 1.2rem; display: flex; align-items: center; gap: 8px; }
         .logo span { color: var(--primary); }
-        .badge { background: var(--accent); font-size: 0.7rem; padding: 2px 8px; border-radius: 12px; }
+        .nav-subtitle { font-size: 0.85rem; color: var(--text-muted); }
 
         /* MAIN LAYOUT */
         .container {
             flex: 1;
             display: flex;
             height: calc(100vh - 60px);
+            overflow: hidden;
         }
 
         /* LEFT SIDEBAR (CONFIG) */
         .sidebar {
             width: 350px;
+            min-width: 350px;
             background: var(--bg-panel);
             border-right: 1px solid var(--border);
             padding: 1.5rem;
@@ -70,13 +74,13 @@
         
         input[type="url"], input[type="text"] {
             width: 100%;
-            padding: 10px 12px;
+            padding: 12px 12px;
             background: var(--bg-dark);
             border: 1px solid var(--border);
             border-radius: 6px;
             color: white;
             font-family: 'JetBrains Mono', monospace;
-            font-size: 0.85rem;
+            font-size: 0.9rem; /* Larger font for mobile */
             outline: none;
             transition: border-color 0.2s;
         }
@@ -95,8 +99,8 @@
         .switch {
             position: relative;
             display: inline-block;
-            width: 40px;
-            height: 20px;
+            width: 44px; /* Slightly larger for touch */
+            height: 24px;
         }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider {
@@ -110,8 +114,8 @@
         .slider:before {
             position: absolute;
             content: "";
-            height: 14px;
-            width: 14px;
+            height: 18px;
+            width: 18px;
             left: 3px;
             bottom: 3px;
             background-color: white;
@@ -126,7 +130,7 @@
             color: #000;
             font-weight: 700;
             border: none;
-            padding: 12px;
+            padding: 14px; /* Larger touch target */
             border-radius: 6px;
             width: 100%;
             cursor: pointer;
@@ -136,8 +140,9 @@
             align-items: center;
             gap: 8px;
             font-size: 1rem;
+            transition: opacity 0.2s;
         }
-        .btn-scrape:hover { background: var(--primary-hover); }
+        .btn-scrape:active { opacity: 0.8; }
         .btn-scrape:disabled { opacity: 0.5; cursor: not-allowed; }
 
         /* RIGHT PANEL (RESULTS) */
@@ -146,11 +151,13 @@
             display: flex;
             flex-direction: column;
             background: var(--bg-dark);
+            min-width: 0; /* Prevent flex overflow */
         }
 
         /* Request Generator (Top Right) */
         .code-preview {
             height: 150px;
+            min-height: 150px;
             background: var(--bg-dark);
             border-bottom: 1px solid var(--border);
             padding: 1rem;
@@ -177,32 +184,39 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            position: relative;
         }
         
         .tabs {
             display: flex;
             background: var(--bg-panel);
             border-bottom: 1px solid var(--border);
+            overflow-x: auto; /* Scrollable tabs on mobile */
+            white-space: nowrap;
+            -webkit-overflow-scrolling: touch;
         }
+        .tabs::-webkit-scrollbar { display: none; } /* Hide scrollbar */
+        
         .tab {
-            padding: 10px 20px;
+            padding: 12px 20px;
             cursor: pointer;
             font-size: 0.9rem;
             color: var(--text-muted);
             border-right: 1px solid var(--border);
             transition: 0.2s;
+            flex-shrink: 0;
         }
         .tab.active {
             background: var(--bg-dark);
             color: var(--primary);
             border-top: 2px solid var(--primary);
         }
-        .tab:hover { color: white; }
 
         .content-area {
             flex: 1;
             position: relative;
             overflow: hidden;
+            background: var(--bg-dark);
         }
         
         iframe { width: 100%; height: 100%; border: none; background: white; }
@@ -214,13 +228,14 @@
             font-family: 'JetBrains Mono', monospace;
             font-size: 0.85rem;
             color: #e2e8f0;
+            word-wrap: break-word; /* Prevent overflow text */
         }
         .key { color: #7dd3fc; }
         .string { color: #86efac; }
         .number { color: #fca5a5; }
 
         .spinner {
-            width: 16px; height: 16px;
+            width: 18px; height: 18px;
             border: 2px solid rgba(0,0,0,0.3);
             border-top-color: #000;
             border-radius: 50%;
@@ -229,6 +244,69 @@
         }
         @keyframes spin { 100% { transform: rotate(360deg); } }
 
+        /* =========================================
+           MOBILE RESPONSIVE TWEAKS (ANDROID FIX)
+           ========================================= */
+        @media (max-width: 768px) {
+            body { 
+                height: 100%; 
+                overflow-y: auto; /* Allow full page scroll on mobile */
+            }
+            
+            nav {
+                padding: 0 1rem;
+            }
+            .nav-subtitle { display: none; } /* Save space in header */
+
+            .container {
+                flex-direction: column;
+                height: auto;
+                overflow: visible;
+            }
+
+            /* Config Panel */
+            .sidebar {
+                width: 100%;
+                min-width: 100%;
+                height: auto;
+                border-right: none;
+                border-bottom: 1px solid var(--border);
+                padding: 1rem;
+                gap: 1rem;
+            }
+
+            .btn-scrape {
+                margin-top: 1rem;
+            }
+
+            /* Main Content */
+            .main-content {
+                height: auto;
+                min-height: 80vh; /* Ensure enough space for results */
+            }
+
+            /* Code Preview - Make it smaller on mobile or collapsible */
+            .code-preview {
+                height: auto;
+                min-height: auto;
+                padding: 0.75rem;
+            }
+            .code-box {
+                height: 80px; /* Smaller code box on mobile */
+            }
+
+            /* Result Area */
+            .result-view {
+                height: 600px; /* Fixed height for scrollable result area */
+            }
+            
+            .tab {
+                flex: 1; /* Distribute tabs evenly */
+                text-align: center;
+                padding: 12px 10px;
+                font-size: 0.8rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -240,36 +318,35 @@
         </svg>
         Zen<span>Scraper</span>
     </div>
-    <div style="font-size:0.85rem; color: var(--text-muted);">
+    <div class="nav-subtitle">
         Serverless Python Scraper
     </div>
 </nav>
 
 <div class="container">
     <div class="sidebar">
-        <h3>Target</h3>
+        <h3>Target URL</h3>
         <div class="input-group">
-            <label>URL to Scrape</label>
             <input type="url" id="url" placeholder="https://example.com" value="https://example.com">
         </div>
 
         <h3>Configuration</h3>
         <div class="toggle-row">
-            <span class="toggle-label" title="Rotates User-Agents to mimic real browsers">Anti-Bot (User-Agent)</span>
+            <span class="toggle-label">Anti-Bot (User-Agent)</span>
             <label class="switch">
                 <input type="checkbox" id="antiBot" checked onchange="updateCode()">
                 <span class="slider"></span>
             </label>
         </div>
         <div class="toggle-row">
-            <span class="toggle-label" title="Simulate Premium Proxy Connection">Premium Proxy</span>
+            <span class="toggle-label">Premium Proxy</span>
             <label class="switch">
                 <input type="checkbox" id="proxy" onchange="updateCode()">
                 <span class="slider"></span>
             </label>
         </div>
         <div class="toggle-row">
-            <span class="toggle-label" title="Extract visual data (limited in serverless)">Render JavaScript</span>
+            <span class="toggle-label">Render JavaScript</span>
             <label class="switch">
                 <input type="checkbox" id="renderJs" onchange="updateCode()">
                 <span class="slider"></span>
@@ -278,8 +355,8 @@
 
         <h3>Extraction</h3>
         <div class="input-group">
-            <label>CSS Selector (Optional)</label>
-            <input type="text" id="selector" placeholder="e.g. h1, .price, #product" oninput="updateCode()">
+            <label style="margin-bottom:0.5rem; color:var(--text-muted); font-size:0.8rem;">CSS Selector (Optional)</label>
+            <input type="text" id="selector" placeholder="e.g. h1, .price" oninput="updateCode()">
         </div>
 
         <button class="btn-scrape" onclick="runScraper()" id="scrapeBtn">
@@ -291,22 +368,24 @@
     <div class="main-content">
         <div class="code-preview">
             <div class="code-header">
-                <span>REQUEST PREVIEW (PYTHON)</span>
-                <span style="cursor:pointer; color:var(--primary)" onclick="copyCode()">Copy Code</span>
+                <span>PYTHON REQUEST</span>
+                <span style="cursor:pointer; color:var(--primary)" onclick="copyCode()">Copy</span>
             </div>
             <div class="code-box" id="codeBox"></div>
         </div>
 
         <div class="result-view">
             <div class="tabs">
-                <div class="tab active" onclick="setTab('json')">JSON Result</div>
-                <div class="tab" onclick="setTab('html')">Visual Preview</div>
-                <div class="tab" onclick="setTab('headers')">Response Headers</div>
+                <div class="tab active" onclick="setTab('json', this)">JSON Result</div>
+                <div class="tab" onclick="setTab('html', this)">Visual Preview</div>
+                <div class="tab" onclick="setTab('headers', this)">Headers</div>
             </div>
 
             <div id="view-json" class="content-area" style="display:block;">
                 <div class="json-viewer" id="jsonOutput">
-                    <span style="color:gray">// Click 'Start Scraping' to see data...</span>
+                    <div style="display:flex; height:100%; align-items:center; justify-content:center; color:#334155;">
+                        // Ready to scrape...
+                    </div>
                 </div>
             </div>
             
@@ -329,8 +408,7 @@
         const url = document.getElementById('url').value;
         const useAntiBot = document.getElementById('antiBot').checked;
         const useProxy = document.getElementById('proxy').checked;
-        const selector = document.getElementById('selector').value;
-
+        
         let code = `import requests\n\n`;
         code += `url = "${url}"\n`;
         
@@ -354,19 +432,30 @@
     updateCode();
     document.getElementById('url').addEventListener('input', updateCode);
 
-    // 2. TAB LOGIC
-    function setTab(mode) {
-        // Hide all
+    // 2. TAB LOGIC (BUG FIX: Removed dependency on global 'event')
+    function setTab(mode, element) {
+        // Hide all views
         document.getElementById('view-json').style.display = 'none';
         document.getElementById('view-html').style.display = 'none';
         document.getElementById('view-headers').style.display = 'none';
         
-        // Remove active class
+        // Remove active class from all tabs
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
         
-        // Show selected
+        // Show selected view
         document.getElementById(`view-${mode}`).style.display = 'block';
-        event.target.classList.add('active');
+        
+        // Set active tab logic
+        if (element) {
+            // If clicked by user
+            element.classList.add('active');
+        } else {
+            // If called programmatically (fallback to find by text)
+            const tabs = document.querySelectorAll('.tab');
+            if(mode === 'json') tabs[0].classList.add('active');
+            if(mode === 'html') tabs[1].classList.add('active');
+            if(mode === 'headers') tabs[2].classList.add('active');
+        }
     }
 
     // 3. EXECUTE SCRAPE
@@ -410,16 +499,16 @@
                 document.getElementById('htmlFrame').srcdoc = data.html_preview;
             }
 
-            // Auto switch to JSON if success
+            // BUG FIX: Manual switch without triggering undefined event
             if (data.success) {
-                setTab('json');
-                document.querySelector('.tab').classList.add('active'); // Reset UI active state fix
+                setTab('json', null); 
             } else {
-                alert("Scraping failed: " + data.error);
+                alert("Scraping failed: " + (data.error || "Unknown error"));
             }
 
         } catch (e) {
-            alert("Error: " + e.message);
+            console.error(e); // Log error for debugging
+            alert("Connection Error: " + e.message);
         } finally {
             btn.disabled = false;
             spinner.style.display = 'none';
