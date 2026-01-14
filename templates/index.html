@@ -216,7 +216,7 @@
         statusMsg.textContent = '';
         statusCode.textContent = '';
         emptyState.style.display = 'none';
-        iframe.srcdoc = ''; // Clear previous
+        iframe.srcdoc = ''; 
         
         // Loading State
         scrapeBtn.disabled = true;
@@ -243,8 +243,6 @@
             statusCode.style.color = '#16a34a';
             showStatus(`Berhasil scrape: ${data.url}`, 'success');
             
-            // Set Iframe Content dengan srcdoc untuk keamanan (Anti-XSS dasar)
-            // Namun tetap mengizinkan script halaman target jalan di sandbox
             iframe.srcdoc = data.html;
 
         } catch (error) {
