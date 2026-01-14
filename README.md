@@ -28,7 +28,7 @@
 
 1. Clone repository:
 ```bash
-git clone https://github.com/username/sannscraper.git
+git clone https://github.com/sanzzyproject/sannscraper.git
 cd sannscraper
 ```
 
@@ -65,7 +65,8 @@ sannscraper/
 ├─ utils/               # Utility functions (kosong, siap dikembangkan)
 ├─ types/               # Type definitions (kosong, siap dikembangkan)
 ├─ requirements.txt     # Dependency Python
-└─ vercel.json          # Konfigurasi deploy Vercel
+├─ vercel.json          # Konfigurasi deploy Vercel
+└─ LICENSE              # MIT License untuk project
 ```
 
 
