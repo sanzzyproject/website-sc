@@ -13,10 +13,14 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Konfigurasi Template
-# Menggunakan path relative untuk kompatibilitas Vercel/Local
-base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-templates = Jinja2Templates(directory=os.path.join(base_dir, "templates"))
+# --- KONFIGURASI PATH TEMPLATE (FIXED FOR VERCEL) ---
+# Karena file ini ada di dalam folder /api, kita harus mundur satu level
+# untuk menemukan folder templates di root.
+current_file_dir = os.path.dirname(os.path.abspath(__file__)) # .../project/api
+project_root = os.path.dirname(current_file_dir)            # .../project
+templates_dir = os.path.join(project_root, "templates")
+
+templates = Jinja2Templates(directory=templates_dir)
 
 # Model data untuk input
 class ScrapeRequest(BaseModel):
@@ -38,7 +42,7 @@ def fix_relative_urls(soup, base_url):
     for tag_name, attribute in tags.items():
         for element in soup.find_all(tag_name):
             val = element.get(attribute)
-            if val and not val.startswith(('http', 'https', 'data:')):
+            if val and not val.startswith(('http', 'https', 'data:', '#')):
                 element[attribute] = urljoin(str(base_url), val)
                 
     # Tambahkan base tag sebagai fail-safe
@@ -93,9 +97,3 @@ async def scrape_url(payload: ScrapeRequest):
         raise HTTPException(status_code=400, detail=f"Error scraping: {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
-
-# Handler untuk Vercel Serverless (WSGI wrapper tidak diperlukan untuk FastAPI versi baru di Vercel)
-# Tapi jika dibutuhkan debugging local:
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
