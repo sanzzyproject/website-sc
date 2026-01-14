@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProScraper - Web Scraper & Previewer</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg: #f8fafc;
+            --surface: #ffffff;
+            --text: #1e293b;
+            --border: #e2e8f0;
+            --error: #ef4444;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.5;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        header {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .brand { font-weight: 700; font-size: 1.25rem; color: var(--primary); display: flex; align-items: center; gap: 8px; }
+        .brand span { color: var(--text); }
+
+        /* Main Layout */
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 1.5rem;
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+            gap: 1.5rem;
+        }
+
+        /* Input Section */
+        .control-panel {
+            background: var(--surface);
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .input-group { flex: 1; position: relative; }
+        
+        input[type="url"] {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+            outline: none;
+        }
+
+        input[type="url"]:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        button:hover { background-color: var(--primary-hover); }
+        button:disabled { background-color: #94a3b8; cursor: not-allowed; }
+
+        /* Preview Section */
+        .preview-container {
+            flex: 1;
+            background: var(--surface);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            min-height: 400px;
+        }
+
+        .preview-header {
+            padding: 0.75rem 1.5rem;
+            background: #f1f5f9;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.875rem;
+            color: #64748b;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: white;
+            flex: 1;
+        }
+
+        /* State & Animation */
+        .status-msg { margin-top: 0.5rem; font-size: 0.875rem; min-height: 20px; }
+        .error { color: var(--error); }
+        .success { color: #16a34a; }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            display: none;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Empty State */
+        .empty-state {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: #94a3b8;
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .control-panel { flex-direction: column; align-items: stretch; }
+            main { padding: 1rem; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="brand">⚡ <span>ProScraper</span></div>
+    <div style="font-size: 0.875rem; color: #64748b;">Python Serverless Scraper</div>
+</header>
+
+<main>
+    <div class="control-panel">
+        <div class="input-group">
+            <input type="url" id="urlInput" placeholder="https://example.com" required>
+        </div>
+        <button id="scrapeBtn" onclick="performScrape()">
+            <div class="spinner" id="spinner"></div>
+            <span id="btnText">Start Scraping</span>
+        </button>
+    </div>
+    <div class="status-msg" id="statusMsg"></div>
+
+    <div class="preview-container">
+        <div class="preview-header">
+            <span>Result Preview</span>
+            <span id="statusCode"></span>
+        </div>
+        <div class="empty-state" id="emptyState">
+            <svg width="64" height="64" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin-bottom: 1rem;">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
+            </svg>
+            <p>Masukkan URL untuk melihat hasil scrape</p>
+        </div>
+        <iframe id="resultFrame" sandbox="allow-same-origin allow-scripts"></iframe>
+    </div>
+</main>
+
+<script>
+    async function performScrape() {
+        const urlInput = document.getElementById('urlInput');
+        const scrapeBtn = document.getElementById('scrapeBtn');
+        const spinner = document.getElementById('spinner');
+        const btnText = document.getElementById('btnText');
+        const statusMsg = document.getElementById('statusMsg');
+        const iframe = document.getElementById('resultFrame');
+        const emptyState = document.getElementById('emptyState');
+        const statusCode = document.getElementById('statusCode');
+
+        const url = urlInput.value.trim();
+
+        if (!url) {
+            showStatus('Mohon masukkan URL yang valid.', 'error');
+            return;
+        }
+
+        // Reset UI
+        statusMsg.textContent = '';
+        statusCode.textContent = '';
+        emptyState.style.display = 'none';
+        iframe.srcdoc = ''; // Clear previous
+        
+        // Loading State
+        scrapeBtn.disabled = true;
+        spinner.style.display = 'block';
+        btnText.textContent = 'Processing...';
+
+        try {
+            const response = await fetch('/api/scrape', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ url: url })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.detail || 'Terjadi kesalahan saat scraping.');
+            }
+
+            // Success
+            statusCode.textContent = `Status: ${data.status_code}`;
+            statusCode.style.color = '#16a34a';
+            showStatus(`Berhasil scrape: ${data.url}`, 'success');
+            
+            // Set Iframe Content dengan srcdoc untuk keamanan (Anti-XSS dasar)
+            // Namun tetap mengizinkan script halaman target jalan di sandbox
+            iframe.srcdoc = data.html;
+
+        } catch (error) {
+            console.error(error);
+            showStatus(error.message, 'error');
+            emptyState.style.display = 'block';
+            emptyState.innerHTML = `<p style="color:var(--error)">${error.message}</p>`;
+        } finally {
+            // Restore State
+            scrapeBtn.disabled = false;
+            spinner.style.display = 'none';
+            btnText.textContent = 'Start Scraping';
+        }
+    }
+
+    function showStatus(msg, type) {
+        const el = document.getElementById('statusMsg');
+        el.textContent = msg;
+        el.className = 'status-msg ' + type;
+    }
+</script>
+
+</body>
+</html>
