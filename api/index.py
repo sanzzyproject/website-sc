@@ -1,42 +1,29 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, HttpUrl
-from typing import Optional
-import httpx
+from typing import Optional, Dict
+import requests
 from bs4 import BeautifulSoup
+from urllib.parse import urljoin
 import os
 import random
 import time
-import logging # Pengganti Loguru
-import json # Pengganti Ujson
 
-# Setup Logging Standard
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("scraper")
-
-app = FastAPI(title="SannScraper Lite", version="4.0.0")
+app = FastAPI(title="ZenScraper Clone", version="3.0.0")
 
 # --- PATH CONFIG ---
 current_file_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(current_file_dir)
 templates_dir = os.path.join(project_root, "templates")
-
-if not os.path.exists(templates_dir):
-    templates_dir = os.path.join(current_file_dir, "templates")
-
 templates = Jinja2Templates(directory=templates_dir)
 
-# --- SIMPLE CACHE ---
-# Di serverless, complex cache library itu overkill karena memory reset tiap function sleep.
-# Kita pakai Dictionary biasa.
-request_cache = {} 
-
-# --- REAL USER AGENTS ---
+# --- REAL USER AGENTS (Agar dianggap manusia) ---
 USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1"
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/118.0",
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36"
 ]
 
 class ScrapeRequest(BaseModel):
@@ -44,49 +31,44 @@ class ScrapeRequest(BaseModel):
     selector: Optional[str] = None
     premium_proxy: bool = False
     anti_bot: bool = True
-    render_js: bool = False 
+    render_js: bool = False # Note: Full JS render butuh Headless Browser (berat untuk serverless), ini flag logic.
 
 def get_headers(anti_bot: bool):
-    """Membuat Headers palsu"""
+    """Membuat Headers palsu agar terlihat seperti browser asli"""
     if not anti_bot:
-        return {'User-Agent': 'SannScraper/1.0'}
+        return {'User-Agent': 'ProScraper/1.0'}
     
     return {
         'User-Agent': random.choice(USER_AGENTS),
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9,id;q=0.8',
+        'Accept-Encoding': 'gzip, deflate, br',
         'Connection': 'keep-alive',
-        'Upgrade-Insecure-Requests': '1'
+        'Upgrade-Insecure-Requests': '1',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none',
+        'Sec-Fetch-User': '?1',
+        'Cache-Control': 'max-age=0',
     }
 
-def fix_assets(html_content, base_url):
-    """Memperbaiki link gambar/css"""
-    try:
-        soup = BeautifulSoup(html_content, 'html.parser')
-        if not soup.head:
-            soup.insert(0, soup.new_tag("head"))
-        if not soup.find("base"):
-            base_tag = soup.new_tag("base", href=str(base_url))
-            soup.head.insert(0, base_tag)
-        return str(soup)
-    except Exception:
-        return html_content
-
-# --- ASYNC SCRAPING (Manual Retry) ---
-# Pengganti library Tenacity untuk mengurangi beban
-async def fetch_url(url: str, headers: dict, proxies: dict = None):
-    max_retries = 3
-    for attempt in range(max_retries):
-        try:
-            async with httpx.AsyncClient(http2=False, proxies=proxies, timeout=10.0, follow_redirects=True) as client:
-                response = await client.get(url, headers=headers)
-                response.raise_for_status()
-                return response.content, response.headers, response.status_code
-        except (httpx.RequestError, httpx.HTTPStatusError) as e:
-            if attempt == max_retries - 1: # Jika ini attempt terakhir
-                raise e
-            time.sleep(1) # Tunggu 1 detik sebelum retry
-    return None, None, None
+def fix_assets(soup, base_url):
+    """Memperbaiki asset untuk visual preview"""
+    for tag in soup.find_all(['img', 'script', 'link', 'a']):
+        attr = 'href' if tag.name in ['a', 'link'] else 'src'
+        if tag.get(attr):
+            # Biarkan data URI atau anchor link
+            if tag[attr].startswith(('data:', '#', 'javascript:')):
+                continue
+            tag[attr] = urljoin(str(base_url), tag[attr])
+    
+    # Inject base tag
+    if not soup.head:
+        soup.insert(0, soup.new_tag("head"))
+    if not soup.find("base"):
+        base_tag = soup.new_tag("base", href=str(base_url))
+        soup.head.insert(0, base_tag)
+    return str(soup)
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
@@ -96,64 +78,64 @@ async def read_root(request: Request):
 async def scrape(payload: ScrapeRequest):
     target_url = str(payload.url)
     
-    # 1. Cek Cache Simple
-    if target_url in request_cache:
-        return request_cache[target_url]
-
+    # 1. Konfigurasi Request Real
     headers = get_headers(payload.anti_bot)
-    proxies = None # Placeholder proxy
     
+    # Simulasi Proxy (Logic only, karena kita butuh kredensial proxy asli untuk rotating IP)
+    proxies = None
+    if payload.premium_proxy:
+        # Jika punya proxy rotation service, masukkan disini.
+        # proxies = {"http": "http://user:pass@gate.zenrows.com:8001", ...}
+        pass 
+
     try:
         start_time = time.time()
         
-        # 2. REQUEST
-        content, res_headers, status_code = await fetch_url(target_url, headers, proxies)
+        # 2. EKSEKUSI REQUEST
+        response = requests.get(
+            target_url, 
+            headers=headers, 
+            proxies=proxies, 
+            timeout=15,
+            allow_redirects=True
+        )
         
         elapsed = round(time.time() - start_time, 2)
         
-        # 3. PARSING
-        soup = BeautifulSoup(content, 'html.parser')
+        # 3. Handle Encoding
+        response.encoding = response.apparent_encoding
+
+        # 4. Parsing Data
+        soup = BeautifulSoup(response.content, 'html.parser')
         
+        # Data Extraction
         extracted_data = {
             "title": soup.title.string.strip() if soup.title else None,
             "description": soup.find("meta", attrs={"name": "description"})["content"] if soup.find("meta", attrs={"name": "description"}) else None,
-            "h1_tags": [h.get_text(strip=True) for h in soup.find_all("h1")],
-            "links_found": len(soup.find_all("a")),
-            "images_found": len(soup.find_all("img")),
+            "h1": [h.get_text(strip=True) for h in soup.find_all("h1")],
+            "links_count": len(soup.find_all("a")),
+            "images_count": len(soup.find_all("img")),
         }
 
+        # Custom Selector
         if payload.selector:
             selection = soup.select(payload.selector)
-            extracted_data["selector_data"] = [el.get_text(strip=True) for el in selection]
+            extracted_data["custom_selector_results"] = [el.get_text(strip=True) for el in selection]
 
-        result = {
+        # 5. Siapkan Output
+        return {
             "success": True,
-            "status": status_code,
-            "time": f"{elapsed}s",
-            "method": "HTTP Async",
-            "url": target_url,
+            "status_code": response.status_code,
+            "time_taken": f"{elapsed}s",
+            "original_url": target_url,
+            "response_headers": dict(response.headers),
             "data": extracted_data,
-            "html_preview": fix_assets(content, target_url),
-            "headers": dict(res_headers)
+            "html_preview": fix_assets(soup, target_url)
         }
 
-        # Simpan ke cache (batasi memori dengan hapus jika terlalu besar)
-        if len(request_cache) > 50: 
-            request_cache.clear()
-        request_cache[target_url] = result
-        
-        return result
-
-    except httpx.HTTPStatusError as e:
-        return {
-            "success": False, 
-            "error": f"Website Error: {e.response.status_code}", 
-            "status_code": e.response.status_code
-        }
     except Exception as e:
-        logger.error(f"Error scraping {target_url}: {str(e)}")
         return {
             "success": False, 
-            "error": str(e), 
+            "error": str(e),
             "status_code": 500
         }
